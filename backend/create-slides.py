@@ -75,6 +75,7 @@ def create_slides(service, presentation_id, content):
     service.presentations().batchUpdate(
         presentationId=presentation_id, body={'requests': delete_requests}).execute()
 
+    # 各スライドにコンテンツを挿入
     for index, slide_content in enumerate(slide_contents):
         lines = slide_content.strip().split("\n")
         title = lines[0].replace("スライド", "").strip(":")
@@ -108,7 +109,6 @@ def create_slides(service, presentation_id, content):
             .batchUpdate(presentationId=presentation_id, body={"requests": requests})
             .execute()
         )
-
         slides.append(object_id)
 
     return slides
