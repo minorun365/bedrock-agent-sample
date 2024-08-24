@@ -8,7 +8,7 @@ AGENT_ID = os.getenv("AGENT_ID")
 AGENT_ALIAS_ID = os.getenv("AGENT_ALIAS_ID")
 
 # タイトル
-st.title("パワポ作成エージェント")
+st.title("スライド作ってメールで送るマン")
 
 # Bedrock Agent Runtime クライアント
 if "client" not in st.session_state:
@@ -25,13 +25,18 @@ if "messages" not in st.session_state:
     st.session_state.messages = []
 messages = st.session_state.messages
 
+# 過去のメッセージを表示
+for message in messages:
+    with st.chat_message(message['role']):
+        st.markdown(message['text'])
+
 
 # チャット入力欄を定義
-if prompt := st.chat_input("何でも聞いてください。"):
+if prompt := st.chat_input("例：KDDIの歴史をスライドにまとめてメールで送って"):
     # ユーザーの入力をメッセージに追加
     messages.append({"role": "human", "text": prompt})
 
-    # ユーザーの入力を画面表示
+    # ユーザーの入力を画面に表示
     with st.chat_message("user"):
         st.markdown(prompt)
 
@@ -41,11 +46,12 @@ if prompt := st.chat_input("何でも聞いてください。"):
         sessionId=session_id,
         enableTrace=True,
         inputText=prompt,
-        # sessionState={"files": get_files()},
     )
 
+    # エージェントの回答を画面に表示
     with st.chat_message("assistant"):
         for event in response.get("completion"):
+            # エージェントの処理状況が更新されたら画面に表示
             if "trace" in event:
                 if "orchestrationTrace" in event["trace"]["trace"]:
                     orchestrationTrace = event["trace"]["trace"]["orchestrationTrace"]
@@ -59,40 +65,14 @@ if prompt := st.chat_input("何でも聞いてください。"):
                             st.write(orchestrationTrace)
 
                     if "invocationInput" in orchestrationTrace:
-                        if (
-                            "codeInterpreterInvocationInput"
-                            in orchestrationTrace["invocationInput"]
-                            and "code"
-                            in orchestrationTrace["invocationInput"][
-                                "codeInterpreterInvocationInput"
-                            ]
-                        ):
-                            code = orchestrationTrace["invocationInput"][
-                                "codeInterpreterInvocationInput"
-                            ]["code"]
-
-                            with st.expander("code", expanded=False):
-                                st.write(orchestrationTrace)
-
-                            with st.expander("Python Code", expanded=False):
-                                st.markdown(f"```\n{code}\n```")
-                        else:
-                            with st.expander("次のタスクへのインプットを生成しました", expanded=False):
-                                st.write(orchestrationTrace)
+                        with st.expander("次のタスクへのインプットを生成しました", expanded=False):
+                            st.write(orchestrationTrace)
 
                     if "observation" in orchestrationTrace:
                         with st.expander("タスクの結果から洞察を得ています…", expanded=False):
                             st.write(orchestrationTrace)
 
-            if "files" in event:
-                files = event["files"]["files"]
-                for file in files:
-
-                    with open(file["name"], mode="wb") as f:
-                        f.write(file["bytes"])
-
-                    st.image(file["bytes"], caption=file["name"])
-
+            # エージェントの回答が出力されたら画面に表示
             if "chunk" in event:
                 chunk = event["chunk"]
                 answer = chunk["bytes"].decode()
