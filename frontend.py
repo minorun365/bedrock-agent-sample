@@ -1,9 +1,14 @@
 # Pyhton外部モジュールのインポート
-import uuid, boto3
+import uuid, boto3, dotenv, os
 import streamlit as st
 
+# 環境変数からエージェントIDを取得
+dotenv.load_dotenv()
+AGENT_ID = os.getenv("AGENT_ID")
+AGENT_ALIAS_ID = os.getenv("AGENT_ALIAS_ID")
+
 # タイトル
-st.title("Bedrock Code Interpreter")
+st.title("パワポ作成エージェント")
 
 # Bedrock Agent Runtime クライアント
 if "client" not in st.session_state:
@@ -31,8 +36,8 @@ if prompt := st.chat_input("何でも聞いてください。"):
         st.markdown(prompt)
 
     response = client.invoke_agent(
-        agentId="XXX",
-        agentAliasId="XXX",
+        agentId=AGENT_ID,
+        agentAliasId=AGENT_ALIAS_ID,
         sessionId=session_id,
         enableTrace=True,
         inputText=prompt,
@@ -46,11 +51,11 @@ if prompt := st.chat_input("何でも聞いてください。"):
                     orchestrationTrace = event["trace"]["trace"]["orchestrationTrace"]
 
                     if "modelInvocationInput" in orchestrationTrace:
-                        with st.expander("modelInvocationInput", expanded=False):
+                        with st.expander("思考中…", expanded=False):
                             st.write(orchestrationTrace)
 
                     if "rationale" in orchestrationTrace:
-                        with st.expander("rationale（根拠）", expanded=True):
+                        with st.expander("次のアクションを決定しました", expanded=False):
                             st.write(orchestrationTrace)
 
                     if "invocationInput" in orchestrationTrace:
@@ -69,14 +74,14 @@ if prompt := st.chat_input("何でも聞いてください。"):
                             with st.expander("code", expanded=False):
                                 st.write(orchestrationTrace)
 
-                            with st.expander("Python Code", expanded=True):
+                            with st.expander("Python Code", expanded=False):
                                 st.markdown(f"```\n{code}\n```")
                         else:
-                            with st.expander("invocationInput", expanded=False):
+                            with st.expander("次のタスクへのインプットを生成しました", expanded=False):
                                 st.write(orchestrationTrace)
 
                     if "observation" in orchestrationTrace:
-                        with st.expander("observation（観察）", expanded=True):
+                        with st.expander("タスクの結果から洞察を得ています…", expanded=False):
                             st.write(orchestrationTrace)
 
             if "files" in event:
