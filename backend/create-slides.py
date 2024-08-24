@@ -24,7 +24,7 @@ def lambda_handler(event, context):
     presentation_id = presentation.get("presentationId")
 
     # スライドの追加
-    slides = create_slides(service, presentation_id, content)
+    create_slides(service, presentation_id, content)
 
     # Google Drive APIクライアントの作成
     drive_service = build("drive", "v3", credentials=creds)
@@ -66,8 +66,14 @@ def lambda_handler(event, context):
 
 def create_slides(service, presentation_id, content):
     slides = []
+    
     # コンテンツを各スライドに分割
     slide_contents = content.split("\n\n")
+
+    # 最初のスライド（タイトルスライド）を削除
+    delete_requests = [{'deleteObject': {'objectId': 'p'}}]
+    service.presentations().batchUpdate(
+        presentationId=presentation_id, body={'requests': delete_requests}).execute()
 
     for index, slide_content in enumerate(slide_contents):
         lines = slide_content.strip().split("\n")
